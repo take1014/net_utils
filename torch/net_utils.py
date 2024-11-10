@@ -38,9 +38,9 @@ class ResLinearBlock(nn.Module):
         x2 = self.linear(x2)
         return self.relu(torch.add(x1, x2))
 
-class ResLinearBnBlock(nn.Module):
+class ResLinearBlockWithBn(nn.Module):
     def __init__(self, in_features, mid_features, out_features, bias=True):
-        super(ResLinearBnBlock, self).__init__()
+        super(ResLinearBlockWithBn, self).__init__()
         self.linear_bn_relu1 = LinearBnRelu(in_features=in_features, out_features=out_features, bias=bias)
         self.linear_bn_relu2 = LinearBnRelu(in_features=out_features, out_features=mid_features, bias=bias)
         self.linear = nn.Linear(in_features=mid_features, out_features=out_features, bias=bias)
