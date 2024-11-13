@@ -4,4 +4,4 @@ from .net_utils import (
     Conv2dBn, Conv2dBnRelu, Conv2dRelu, ResConvBlock, ResConvBlockWithBn,
     DeConvRelu, DeConvBnRelu, GlobalAvgPool2d
 )
-from .backborn import ResNet18
+from .backborn import ResNet18, MobileNetV3
