@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import tensorflow as tf
 from tensorflow.keras import layers, models
-from net_utils import ResConvBlockWithBn, Conv2dBnRelu
+from .net_utils import ResConvBlockWithBn, Conv2dBnRelu
 
 class ResNet18(models.Model):
     def __init__(self, in_channels=3):
