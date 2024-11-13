@@ -1,55 +1,114 @@
 #!/usr/bin/env python3
 import torch
 import torch.nn as nn
-from net_utils import Conv2dBnRelu, ResConvBlockWithBn, GlobalAvgPool2D
+import torch.nn.functional as F
+from .net_utils import Conv2dBnRelu, ResConvBlockWithBn, Conv2dBn, GlobalAvgPool2d
 
-class ResNet18(nn.Module):
-    def __init__(self, in_channels=3):
-        super(ResNet18, self).__init__()
-
-        self.conv2d_bn_relu = Conv2dBnRelu(in_channels=in_channels, out_channels=64, kernel_size=(7,7), stride=(2,2), padding=(3,3), bias=False)
-        self.maxpool2d = nn.MaxPool2d(kernel_size=(3,3), stride=(2,2), padding=(1,1))
-
-        # Layer 1
-        self.layer1_1 = ResConvBlockWithBn(in_channels=64, out_channels=64, stride=(1,1), bias=False)
-        self.layer1_2 = ResConvBlockWithBn(in_channels=64, out_channels=64, stride=(1,1), bias=False)
-
-        # Layer 2
-        self.layer2_1 = ResConvBlockWithBn(in_channels=64, out_channels=128, stride=(2,2), bias=False)
-        self.layer2_2 = ResConvBlockWithBn(in_channels=128, out_channels=128, stride=(1,1), bias=False)
-
-        # Layer 3
-        self.layer3_1 = ResConvBlockWithBn(in_channels=128, out_channels=256, stride=(2,2), bias=False)
-        self.layer3_2 = ResConvBlockWithBn(in_channels=256, out_channels=256, stride=(1,1), bias=False)
-
-        # Layer 4
-        self.layer4_1 = ResConvBlockWithBn(in_channels=256, out_channels=512, stride=(2,2), bias=False)
-        self.layer4_2 = ResConvBlockWithBn(in_channels=512, out_channels=512, stride=(1,1), bias=False)
+# HSwish 活性化関数の実装
+class HSwish(nn.Module):
+    def __init__(self):
+        super(HSwish, self).__init__()
 
     def forward(self, x):
-        out = self.conv2d_bn_relu(x)
-        out = self.maxpool2d(out)
-        # Layer1
-        out = self.layer1_1(out)
-        out = self.layer1_2(out)
-        # Layer2
-        out = self.layer2_1(out)
-        out = self.layer2_2(out)
-        # Layer3
-        out = self.layer3_1(out)
-        out = self.layer3_2(out)
-        # Layer4
-        out = self.layer4_1(out)
-        out = self.layer4_2(out)
+        return x * F.relu6(x + 3.0, inplace=True) / 6.0
 
-        return out
+# Depthwise separable convolution
+class DepthwiseSeparableConv(nn.Module):
+    def __init__(self, in_channels, out_channels, stride=(1,1), expand_ratio=1):
+        super(DepthwiseSeparableConv, self).__init__()
+
+        # 1x1 Pointwise Convolution (Expansion layer)
+        self.expand = Conv2dBn(in_channels=in_channels, out_channels=in_channels * expand_ratio, kernel_size=(1,1), stride=(1,1), padding=(0,0), bias=False)
+        self.relu = HSwish()
+
+        # Depthwise Convolution
+        self.depthwise = Conv2dBn(in_channels=in_channels * expand_ratio, out_channels=in_channels * expand_ratio, kernel_size=(3,3), stride=stride, padding=(1,1), groups=in_channels * expand_ratio, bias=False)
+
+        # Pointwise Convolution (Projection layer)
+        self.project = Conv2dBn(in_channels=in_channels * expand_ratio, out_channels=out_channels, kernel_size=(1,1), stride=(1,1), padding=(0,0), bias=False)
+
+    def forward(self, x):
+        x = self.relu(self.expand(x))
+        x = self.depthwise(x)
+        x = self.project(x)
+        return x
+
+# MobileNetV3のモデルクラス
+class MobileNetV3(nn.Module):
+    def __init__(self, config=None, in_channels=3):
+        super(MobileNetV3, self).__init__()
+        assert config is not None
+        self.config = config
+
+        self.stem = nn.Sequential(
+            Conv2dBn(**self.config['stem_params']['conv']),
+            HSwish()
+        )
+
+        self.conv_layers = nn.ModuleList([
+            DepthwiseSeparableConv(**params)
+            for params in self.config["layers_params"]
+        ])
+
+        self.out_conv = nn.Sequential(
+            Conv2dBnRelu(in_channels=self.config["layers_params"][-1]['out_channels'], out_channels=self.config['output_channels'], kernel_size=(1,1), stride=(1,1), padding=(0,0), bias=False),
+            HSwish()
+        )
+
+        if self.config["apply_gap"]:
+            self.gap = GlobalAvgPool2d()
+
+    def forward(self, x):
+        x = self.stem(x)
+        for conv_layer in self.conv_layers:
+            x = conv_layer(x)
+        x = self.out_conv(x)
+        return self.gap(x) if self.config["apply_gap"] else x
+
+class ResNet18(nn.Module):
+    def __init__(self, config=None, in_channels=3):
+        super(ResNet18, self).__init__()
+        assert config is not None
+        self.config = config
+
+        self.stem = nn.Sequential(
+            Conv2dBnRelu(**self.config['stem_params']['conv']),
+            nn.MaxPool2d(**self.config['stem_params']['maxpool'])
+        )
+
+        self.conv_layers = nn.ModuleList([
+            ResConvBlockWithBn(**params)
+            for params in self.config["layers_params"]
+        ])
+
+        self.out_conv = Conv2dBnRelu(in_channels=self.config["layers_params"][-1]['out_channels'], out_channels=self.config['output_channels'], kernel_size=(1,1), stride=(1,1), padding=(0,0), bias=False)
+
+        if self.config["apply_gap"]:
+            self.gap = GlobalAvgPool2d()
+
+    def forward(self, x):
+        x = self.stem(x)
+        for conv_layer in self.conv_layers:
+            x = conv_layer(x)
+        x = self.out_conv(x)
+        return self.gap(x) if self.config["apply_gap"] else x
 
 if __name__ == '__main__':
     from torchsummary import summary
+    import yaml
+    with open("./backborn_params.yaml", 'r') as f:
+        backborn_params = yaml.safe_load(f)
+
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = ResNet18(in_channels=3)
-    model = model.to(device=device)
     x = torch.randn(1, 3, 160, 672).to(device=device)
-    output = model(x)
+    resnet18 = ResNet18(config=backborn_params['resnet18'], in_channels=3)
+    resnet18 = resnet18.to(device=device)
+    output = resnet18(x)
     print(output.shape)
-    summary(model, input_size=(3, 160, 672))
+    summary(resnet18, input_size=(3, 160, 672))
+
+    mobilenet3 = MobileNetV3(config=backborn_params['mobilenetv3'], in_channels=3)
+    mobilenet3 = mobilenet3.to(device=device)
+    output = mobilenet3(x)
+    print(output.shape)
+    summary(mobilenet3, input_size=(3, 160, 672))

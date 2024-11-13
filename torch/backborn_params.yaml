@@ -1,0 +1,119 @@
+resnet18:
+  stem_params:
+    conv:
+      in_channels: 3
+      out_channels: 64
+      kernel_size : [7, 7]
+      stride : [2, 2]
+      padding : [3, 3]
+      bias: false
+    maxpool:
+      kernel_size : [3, 3]
+      stride : [2, 2]
+      padding : [1, 1]
+
+  layers_params:
+    - in_channels: 64
+      out_channels: 64
+      stride: [1, 1]
+      bias: false
+
+    - in_channels: 64
+      out_channels: 64
+      stride: [1, 1]
+      bias: false
+
+    - in_channels: 64
+      out_channels: 128
+      stride: [2, 2]
+      bias: false
+
+    - in_channels: 128
+      out_channels: 128
+      stride: [1, 1]
+      bias: false
+
+    - in_channels: 128
+      out_channels: 256
+      stride: [2, 2]
+      bias: false
+
+    - in_channels: 256
+      out_channels: 256
+      stride: [1, 1]
+      bias: false
+
+    - in_channels: 256
+      out_channels: 512
+      stride: [2, 2]
+      bias: false
+
+    - in_channels: 512
+      out_channels: 512
+      stride: [1, 1]
+      bias: false
+  output_channels : 1024
+  apply_gap: false
+
+mobilenetv3:
+  stem_params:
+    conv:
+      in_channels: 3
+      out_channels: 16
+      kernel_size : [3, 3]
+      stride : [2, 2]
+      padding : [1, 1]
+      bias: false
+
+  layers_params:
+    - in_channels: 16
+      out_channels: 24
+      stride: [2, 2]
+      expand_ratio: 1
+
+    - in_channels: 24
+      out_channels: 24
+      stride: [1, 1]
+      expand_ratio: 6
+
+    - in_channels: 24
+      out_channels: 40
+      stride: [2, 2]
+      expand_ratio: 6
+
+    - in_channels: 40
+      out_channels: 40
+      stride: [1, 1]
+      expand_ratio: 6
+
+    - in_channels: 40
+      out_channels: 80
+      stride: [2, 2]
+      expand_ratio: 6
+
+    - in_channels: 80
+      out_channels: 80
+      stride: [1, 1]
+      expand_ratio: 6
+
+    - in_channels: 80
+      out_channels: 112
+      stride: [1, 1]
+      expand_ratio: 6
+
+    - in_channels: 112
+      out_channels: 112
+      stride: [1, 1]
+      expand_ratio: 6
+
+    - in_channels: 112
+      out_channels: 160
+      stride: [2, 2]
+      expand_ratio: 6
+
+    - in_channels: 160
+      out_channels: 160
+      stride: [1, 1]
+      expand_ratio: 6
+  output_channels : 1280
+  apply_gap: false

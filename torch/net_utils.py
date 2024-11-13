@@ -66,9 +66,9 @@ class ResLinearBlockWithBn(nn.Module):
         return self.relu(torch.add(x1, x2))
 
 class Conv2dBn(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size=(3,3), stride=(1,1), padding=(0,0), dilation=(1,1), bias=True):
+    def __init__(self, in_channels, out_channels, kernel_size=(3,3), stride=(1,1), padding=(0,0), dilation=(1,1), groups=1, bias=True):
         super(Conv2dBn, self).__init__()
-        self.conv2d = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride, padding=padding, dilation=dilation, bias=bias)
+        self.conv2d = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride, padding=padding, dilation=dilation, groups=groups, bias=bias)
         self.bn     = nn.BatchNorm2d(num_features=out_channels)
 
     def forward(self, inputs):
