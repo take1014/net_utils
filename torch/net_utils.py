@@ -149,9 +149,9 @@ class DeConvBnRelu(nn.Module):
         x = self.bn(x)
         return self.relu(x)
 
-class GlobalAvgPool2D(nn.Module):
+class GlobalAvgPool2d(nn.Module):
     def __init__(self,):
-        super(GlobalAvgPool2D, self).__init__()
+        super(GlobalAvgPool2d, self).__init__()
         self.gap = nn.AdaptiveAvgPool2d((1,1))
 
     def forward(self, inputs):

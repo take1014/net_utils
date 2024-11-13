@@ -128,6 +128,31 @@ class ResConvBlockWithBn(layers.Layer):
         x1 = inputs if self.conv2d_bn2 is None else self.conv2d_bn2(inputs)
         return self.relu(layers.Add(name=f"{self.name}_add")([x1, x2]))
 
+class DeConvRelu(layers.Layer):
+    def __init__(self, filters, kernel_size=(3, 3), stride=(1, 1), padding='valid', dilation_rate=(1, 1), use_bias=True):
+        super(DeConvRelu, self).__init__()
+        self.deconv2d = layers.Conv2DTranspose(filters=filters, kernel_size=kernel_size, strides=stride, padding=padding,
+                                               dilation_rate=dilation_rate, use_bias=use_bias)
+        self.relu = layers.ReLU()
+
+    def call(self, inputs):
+        x = self.deconv2d(inputs)
+        return self.relu(x)
+
+# DeConvBnRelu クラスの TensorFlow バージョン
+class DeConvBnRelu(layers.Layer):
+    def __init__(self, filters, kernel_size=(3, 3), stride=(1, 1), padding='valid', dilation_rate=(1, 1), use_bias=True):
+        super(DeConvBnRelu, self).__init__()
+        self.deconv2d = layers.Conv2DTranspose(filters=filters, kernel_size=kernel_size, strides=stride, padding=padding,
+                                               dilation_rate=dilation_rate, use_bias=use_bias)
+        self.bn = layers.BatchNormalization()
+        self.relu = layers.ReLU()
+
+    def call(self, inputs):
+        x = self.deconv2d(inputs)
+        x = self.bn(x)
+        return self.relu(x)
+
 class GlobalAvgPool2d(layers.Layer):
     def __init__(self, name=None):
         super(GlobalAvgPool2d, self).__init__(name=name)
