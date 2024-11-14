@@ -1,0 +1,143 @@
+resnet18:
+  stem_params:
+    conv:
+      filters : 64
+      kernel_size : [7, 7]
+      stride : [2, 2]
+      dilation_rate : [1, 1]
+      padding : same
+      bias: false
+    maxpool:
+      pool_size : [3, 3]
+      strides : [2, 2]
+      padding : same
+
+  layers_params:
+    - in_filters: 64
+      out_filters: 64
+      kernel_size : [3, 3]
+      stride: [1, 1]
+      padding: same
+      dilation_rate : [1, 1]
+      bias: false
+
+    - in_filters: 64
+      out_filters: 64
+      kernel_size : [3, 3]
+      stride: [1, 1]
+      padding: same
+      dilation_rate : [1, 1]
+      bias: false
+
+    - in_filters: 64
+      out_filters: 128
+      kernel_size : [3, 3]
+      stride: [2, 2]
+      padding: same
+      dilation_rate : [1, 1]
+      bias: false
+
+    - in_filters: 128
+      out_filters: 128
+      kernel_size : [3, 3]
+      stride: [1, 1]
+      padding: same
+      dilation_rate : [1, 1]
+      bias: false
+
+    - in_filters: 128
+      out_filters: 256
+      kernel_size : [3, 3]
+      stride: [2, 2]
+      padding: same
+      dilation_rate : [1, 1]
+      bias: false
+
+    - in_filters: 256
+      out_filters: 256
+      kernel_size : [3, 3]
+      stride: [1, 1]
+      padding: same
+      dilation_rate : [1, 1]
+      bias: false
+
+    - in_filters: 256
+      out_filters: 512
+      kernel_size : [3, 3]
+      stride: [2, 2]
+      padding: same
+      dilation_rate : [1, 1]
+      bias: false
+
+    - in_filters: 512
+      out_filters: 512
+      kernel_size : [3, 3]
+      stride: [1, 1]
+      padding: same
+      dilation_rate : [1, 1]
+      bias: false
+  output_filters : 1024
+  apply_gap: true
+
+mobilenetv3:
+  stem_params:
+    conv:
+      in_filters: 3
+      out_filters: 16
+      kernel_size : [3, 3]
+      stride : [2, 2]
+      padding : [1, 1]
+      bias: false
+
+  layers_params:
+    - in_filters: 16
+      out_filters: 24
+      stride: [2, 2]
+      expand_ratio: 1
+
+    - in_filters: 24
+      out_filters: 24
+      stride: [1, 1]
+      expand_ratio: 6
+
+    - in_filters: 24
+      out_filters: 40
+      stride: [2, 2]
+      expand_ratio: 6
+
+    - in_filters: 40
+      out_filters: 40
+      stride: [1, 1]
+      expand_ratio: 6
+
+    - in_filters: 40
+      out_filters: 80
+      stride: [2, 2]
+      expand_ratio: 6
+
+    - in_filters: 80
+      out_filters: 80
+      stride: [1, 1]
+      expand_ratio: 6
+
+    - in_filters: 80
+      out_filters: 112
+      stride: [1, 1]
+      expand_ratio: 6
+
+    - in_filters: 112
+      out_filters: 112
+      stride: [1, 1]
+      expand_ratio: 6
+
+    - in_filters: 112
+      out_filters: 160
+      stride: [2, 2]
+      expand_ratio: 6
+
+    - in_filters: 160
+      out_filters: 160
+      stride: [1, 1]
+      expand_ratio: 6
+  output_filters : 1280
+  apply_gap: false

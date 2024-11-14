@@ -1,52 +1,44 @@
 #!/usr/bin/env python3
 import tensorflow as tf
 from tensorflow.keras import layers, models
-from .net_utils import ResConvBlockWithBn, Conv2dBnRelu
+from net_utils import ResConvBlockWithBn, Conv2dBnRelu, GlobalAvgPool2d
 
 class ResNet18(models.Model):
-    def __init__(self, in_channels=3):
-        super(ResNet18, self).__init__()
+    def __init__(self, config=None, in_channels=3, name='resnet18'):
+        super(ResNet18, self).__init__(name=name)
+        assert config is not None
+        self.config = config
 
-        self.conv2d_bn_relu = Conv2dBnRelu(filters=64, kernel_size=(7, 7), stride=(2, 2), padding='same', bias=False)
-        self.maxpool2d = layers.MaxPool2D(pool_size=(3, 3), strides=(2, 2), padding='same')
+        self.stem = tf.keras.Sequential(name=self.name+'_stem')
+        self.stem.add(Conv2dBnRelu(**self.config['stem_params']['conv'], name=self.name +'_stem_conv'))
+        self.stem.add(layers.MaxPool2D(**self.config['stem_params']['maxpool'], name=self.name+'_stem_maxpool'))
 
-        # Layer 1
-        self.layer1_1 = ResConvBlockWithBn(in_filters=64, out_filters=64, stride=(1, 1), bias=False)
-        self.layer1_2 = ResConvBlockWithBn(in_filters=64, out_filters=64, stride=(1, 1), bias=False)
+        self.layer_list = []
+        for i, layer_params in enumerate(self.config['layers_params']):
+            self.layer_list.append(ResConvBlockWithBn(**layer_params, name=self.name+f'_layer_{i}'))
 
-        # Layer 2
-        self.layer2_1 = ResConvBlockWithBn(in_filters=64, out_filters=128, stride=(2, 2), bias=False)
-        self.layer2_2 = ResConvBlockWithBn(in_filters=128, out_filters=128, stride=(1, 1), bias=False)
+        self.out_conv = Conv2dBnRelu(filters=self.config['output_filters'], kernel_size=(1,1), stride=(1,1), padding='same', dilation_rate=(1,1), bias=False, name=self.name+'_out_conv')
 
-        # Layer 3
-        self.layer3_1 = ResConvBlockWithBn(in_filters=128, out_filters=256, stride=(2, 2), bias=False)
-        self.layer3_2 = ResConvBlockWithBn(in_filters=256, out_filters=256, stride=(1, 1), bias=False)
+        if self.config["apply_gap"]:
+            self.gap = GlobalAvgPool2d(name=self.name+'_gap')
 
-        # Layer 4
-        self.layer4_1 = ResConvBlockWithBn(in_filters=256, out_filters=512, stride=(2, 2), bias=False)
-        self.layer4_2 = ResConvBlockWithBn(in_filters=512, out_filters=512, stride=(1, 1), bias=False)
 
     def call(self, x):
-        x = self.conv2d_bn_relu(x)
-        x = self.maxpool2d(x)
-        # Layer1
-        x = self.layer1_1(x)
-        x = self.layer1_2(x)
-        # Layer2
-        x = self.layer2_1(x)
-        x = self.layer2_2(x)
-        # Layer3
-        x = self.layer3_1(x)
-        x = self.layer3_2(x)
-        # Layer4
-        x = self.layer4_1(x)
-        x = self.layer4_2(x)
-
+        x = self.stem(x)
+        for layer in self.layer_list:
+            x = layer(x)
+        x = self.out_conv(x)
+        if self.config["apply_gap"]:
+            return self.gap(x)
         return x
 
 if __name__ == '__main__':
     from tensorflow.keras.utils import plot_model
-    model = ResNet18(in_channels=3)
+    import yaml
+    with open("./backborn_params.yaml", 'r') as f:
+        backborn_params = yaml.safe_load(f)
+
+    model = ResNet18(backborn_params['resnet18'], in_channels=3)
     input_tensor = tf.random.normal([1, 160, 672, 3])  # (batch_size, height, width, channels)
     output_tensor = model(input_tensor)
     print(output_tensor.shape)
