@@ -55,15 +55,16 @@ class MobileNetV3(nn.Module):
             HSwish()
         )
 
-        if self.config["apply_gap"]:
-            self.gap = GlobalAvgPool2d()
+        self.gap = GlobalAvgPool2d() if self.config["apply_gap"] else None
 
     def forward(self, x):
         x = self.stem(x)
         for conv_layer in self.conv_layers:
             x = conv_layer(x)
         x = self.out_conv(x)
-        return self.gap(x) if self.config["apply_gap"] else x
+        if self.gap:
+            return self.gap(x)
+        return x
 
 class ResNet18(nn.Module):
     def __init__(self, config=None, in_channels=3):
@@ -83,15 +84,16 @@ class ResNet18(nn.Module):
 
         self.out_conv = Conv2dBnRelu(in_channels=self.config["layers_params"][-1]['out_channels'], out_channels=self.config['output_channels'], kernel_size=(1,1), stride=(1,1), padding=(0,0), bias=False)
 
-        if self.config["apply_gap"]:
-            self.gap = GlobalAvgPool2d()
+        self.gap = GlobalAvgPool2d() if self.config["apply_gap"] else None
 
     def forward(self, x):
         x = self.stem(x)
         for conv_layer in self.conv_layers:
             x = conv_layer(x)
         x = self.out_conv(x)
-        return self.gap(x) if self.config["apply_gap"] else x
+        if self.gap:
+            return self.gap(x)
+        return x
 
 if __name__ == '__main__':
     from torchsummary import summary
